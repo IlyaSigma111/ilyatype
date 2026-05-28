@@ -117,7 +117,8 @@ function updateStats() {
   progressEl.textContent = `${currentIndex}/${chars.length}`;
   progressFill.style.width = `${chars.length > 0 ? (currentIndex / chars.length) * 100 : 0}%`;
 
-  const acc = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 100;
+  const denom = correctCount + errors;
+  const acc = denom > 0 ? Math.round((correctCount / denom) * 100) : 100;
   accuracyEl.textContent = acc + '%';
 }
 
@@ -155,12 +156,13 @@ function endGame() {
   const minutes = elapsed / 60;
   const raw = minutes > 0 ? Math.round(totalTyped / minutes) : 0;
   const net = minutes > 0 ? Math.round((correctCount / Math.max(minutes, 0.01))) : 0;
-  const acc = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 100;
+  const denom = correctCount + errors;
+  const acc = denom > 0 ? Math.round((correctCount / denom) * 100) : 100;
 
   resultWpm.textContent = net;
   resultAccuracy.textContent = acc + '%';
   resultRaw.textContent = raw;
-  resultChars.textContent = `${correctCount}/${totalTyped}`;
+  resultChars.textContent = `${correctCount}/${chars.length}`;
   resultTime.textContent = elapsed + 'с';
   resultErrors.textContent = errors;
 
@@ -169,10 +171,9 @@ function endGame() {
 
 function handleChar(char) {
   if (!isRunning || isFinished) return;
-
   if (currentIndex >= chars.length) return;
 
-  if (timeLeft === timerDuration) {
+  if (!timerInterval && timeLeft === timerDuration) {
     timerInterval = setInterval(() => {
       timeLeft--;
       timerEl.textContent = timeLeft;
@@ -186,17 +187,21 @@ function handleChar(char) {
   const expected = chars[currentIndex].char;
   const isCorrect = char === expected;
 
-  typedChars.push({ typed: char, expected, isCorrect });
+  totalTyped++;
 
   if (isCorrect) {
+    if (chars[currentIndex].status !== 'correct') {
+      correctCount++;
+    }
     chars[currentIndex].status = 'correct';
-    correctCount++;
+    currentIndex++;
   } else {
+    if (chars[currentIndex].status !== 'incorrect') {
+      errors++;
+    }
     chars[currentIndex].status = 'incorrect';
-    errors++;
   }
-  totalTyped++;
-  currentIndex++;
+
   renderText();
   updateStats();
 
