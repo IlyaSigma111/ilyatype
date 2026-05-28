@@ -148,6 +148,12 @@ main {
 .text-display .char {
   position: relative;
   transition: color 0.1s;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.text-display .char.pending {
+  color: #b2bec3;
 }
 
 .text-display .char.correct {
@@ -155,33 +161,42 @@ main {
 }
 
 .text-display .char.incorrect {
-  color: #d63031;
-  background: rgba(214, 48, 49, 0.08);
-  border-radius: 2px;
+  color: #fff;
+  background: #d63031;
+  border-radius: 3px;
 }
 
 .text-display .char.current {
-  border-left: 2px solid #6c5ce7;
-  animation: blink 1s step-end infinite;
+  background: rgba(108, 92, 231, 0.15);
+  border-bottom: 2px solid #6c5ce7;
+  border-radius: 3px;
+  color: #2d3436;
 }
 
-@keyframes blink {
-  50% { border-color: transparent; }
+.text-display .char.current.pending {
+  color: #2d3436;
 }
 
 .text-display .char.space {
   display: inline-block;
-  min-width: 8px;
+  min-width: 12px;
+}
+
+.text-display .char.space.pending {
+  min-width: 16px;
+  border-bottom: 1px dashed #dfe6e9;
+  position: relative;
+  top: -2px;
 }
 
 .text-display .char.space.incorrect {
   background: #d63031;
-  opacity: 0.3;
-  border-radius: 2px;
-  min-width: 12px;
-  height: 4px;
+  border-radius: 3px;
+  min-width: 16px;
+  height: 6px;
   position: relative;
   top: -4px;
+  border-bottom: none;
 }
 
 .hidden-input {

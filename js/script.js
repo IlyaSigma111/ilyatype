@@ -92,6 +92,7 @@ function renderText() {
     const span = document.createElement('span');
     span.className = 'char';
     if (ch.char === ' ') span.classList.add('space');
+    if (ch.status === 'pending') span.classList.add('pending');
     if (ch.status === 'correct') span.classList.add('correct');
     if (ch.status === 'incorrect') span.classList.add('incorrect');
     if (i === currentIndex && !isFinished) span.classList.add('current');
@@ -125,6 +126,10 @@ function getCharacterCount(text) {
 }
 
 function startGame() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
   timerDuration = parseInt(timeSelect.value);
   timeLeft = timerDuration;
   isRunning = true;
