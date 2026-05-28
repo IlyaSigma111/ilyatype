@@ -244,8 +244,9 @@ function handleChar(char) {
 
   if (!timerStart) { timerStart = Date.now(); timerInterval = setInterval(updateTimer, 100); }
 
+  const normalize = c => c === 'ё' ? 'е' : c === 'Ё' ? 'Е' : c;
   const expected = chars[currentIndex].char;
-  const isCorrect = char === expected;
+  const isCorrect = normalize(char) === normalize(expected);
   totalTyped++;
 
   if (isCorrect) {
