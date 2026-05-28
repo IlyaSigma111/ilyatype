@@ -43,15 +43,18 @@ const closeResults = document.getElementById('closeResults');
 
 const CIRC = 97.4;
 
+// ====== SETTINGS STATE ======
+let textType = localStorage.getItem('ilt-textType') || 'funny';
+let gameMode = localStorage.getItem('ilt-mode') || 'text';
+
 // ====== THEME ======
 function getTheme() { return localStorage.getItem('ilt-theme') || 'light'; }
 function setTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
   localStorage.setItem('ilt-theme', t);
-  themeToggle.textContent = t === 'dark' ? '☀️' : '🌙';
+  document.querySelectorAll('[name="theme"]').forEach(r => r.checked = r.value === t);
 }
 setTheme(getTheme());
-themeToggle.addEventListener('click', () => setTheme(getTheme() === 'dark' ? 'light' : 'dark'));
 
 // ====== SCREENS ======
 function showScreen(s) {
@@ -91,18 +94,20 @@ let tCorrect = 0;
 let tErrors = 0;
 
 // ====== TEXTS ======
-function getFiltered() {
+function getTextPool() {
+  const pool = textType === 'normal' ? NORMAL_TEXTS : TEXTS;
   const d = diffSel.value, c = catSel.value;
-  return TEXTS.filter(t => (d === 'all' || t.difficulty === d) && (c === 'all' || t.category === c));
+  return pool.filter(t => (d === 'all' || t.difficulty === d) && (c === 'all' || t.category === c));
 }
+
 let currentTextObj = null;
 
 function pickText() {
-  let pool = getFiltered();
-  if (!pool.length) pool = TEXTS;
+  let pool = getTextPool();
+  if (!pool.length) pool = textType === 'normal' ? NORMAL_TEXTS : TEXTS;
   currentTextObj = pool[Math.floor(Math.random() * pool.length)];
   textSource.textContent = '📖 ' + currentTextObj.source;
-  const labels = {classic:'Дедовские мудрости',modern:'Кринж века',science:'Научные бредни',tech:'Техно-дичь',prose:'Жиза'};
+  const labels = {classic:'Классика',modern:'Современное',science:'Наука',tech:'Технологии',prose:'Проза'};
   textCategory.textContent = labels[currentTextObj.category] || currentTextObj.category;
   return currentTextObj.text;
 }
@@ -180,7 +185,7 @@ function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerI
 function startGame() {
   stopTimer();
   timerStart = null;
-  mode = modeSel.value;
+  mode = gameMode;
   isRunning = true;
   isFinished = false;
   tTotalTyped = 0; tCorrect = 0; tErrors = 0;
@@ -294,7 +299,7 @@ overlay.addEventListener('click', e => { if (e.target === overlay) overlay.class
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Tab') { e.preventDefault(); if (!isRunning || isFinished) startGame(); input.focus(); }
-  if (e.key === 'Escape') { overlay.classList.remove('active'); if (gameScreen.classList.contains('active')) showScreen(menuScreen); }
+  if (e.key === 'Escape') { overlay.classList.remove('active'); settingsOverlay.classList.remove('active'); if (gameScreen.classList.contains('active')) showScreen(menuScreen); }
   if (e.key === 'Enter' && overlay.classList.contains('active')) rRestart.click();
 });
 
@@ -345,6 +350,33 @@ shareBtn.addEventListener('click', () => {
   });
 });
 nickInput.addEventListener('keydown', e => { if (e.key === 'Enter') shareBtn.click(); });
+
+// ====== SETTINGS ======
+const settingsOverlay = document.getElementById('settingsOverlay');
+const settingsBtn = document.getElementById('settingsBtn');
+const closeSettings = document.getElementById('closeSettings');
+
+function openSettings() {
+  document.querySelectorAll('[name="mode"]').forEach(r => r.checked = r.value === gameMode);
+  document.querySelectorAll('[name="textType"]').forEach(r => r.checked = r.value === textType);
+  settingsOverlay.classList.add('active');
+}
+
+settingsBtn.addEventListener('click', openSettings);
+closeSettings.addEventListener('click', () => settingsOverlay.classList.remove('active'));
+settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) settingsOverlay.classList.remove('active'); });
+
+document.querySelectorAll('[name="mode"]').forEach(r => r.addEventListener('change', () => {
+  if (r.checked) { gameMode = r.value; localStorage.setItem('ilt-mode', gameMode); settingsOverlay.classList.remove('active'); }
+}));
+
+document.querySelectorAll('[name="textType"]').forEach(r => r.addEventListener('change', () => {
+  if (r.checked) { textType = r.value; localStorage.setItem('ilt-textType', textType); settingsOverlay.classList.remove('active'); }
+}));
+
+document.querySelectorAll('[name="theme"]').forEach(r => r.addEventListener('change', () => {
+  if (r.checked) setTheme(r.value);
+}));
 
 // ====== INIT ======
 shareSection.style.display = 'none';

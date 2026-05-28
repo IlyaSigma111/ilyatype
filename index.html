@@ -38,11 +38,7 @@
           <option value="tech">Техно-дичь</option>
           <option value="prose">Жиза</option>
         </select>
-        <select id="modeSelect">
-          <option value="text">📝 На текст</option>
-          <option value="timed">⏱ 1 минута</option>
-        </select>
-        <button class="theme-toggle" id="themeToggle">🌙</button>
+        <button class="settings-btn" id="settingsBtn">⚙️</button>
       </div>
     </div>
   </div>
@@ -152,6 +148,55 @@
       <div class="results-actions">
         <button class="primary" id="resultRestart">Ещё раз</button>
         <button id="resultNewText">В меню</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SETTINGS OVERLAY ====== -->
+  <div class="results-overlay" id="settingsOverlay">
+    <div class="results-card settings-card">
+      <button id="closeSettings" class="results-close">✕</button>
+      <h2>⚙️ Настройки</h2>
+      <div class="settings-list">
+        <div class="setting-row">
+          <span class="setting-label">Тип текстов</span>
+          <div class="setting-options">
+            <label class="option-btn" id="textTypeFunny">
+              <input type="radio" name="textType" value="funny" checked hidden>
+              <span>😂 Юмор</span>
+            </label>
+            <label class="option-btn" id="textTypeNormal">
+              <input type="radio" name="textType" value="normal" hidden>
+              <span>📖 Норм</span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Режим</span>
+          <div class="setting-options">
+            <label class="option-btn" id="modeText">
+              <input type="radio" name="mode" value="text" checked hidden>
+              <span>📝 На текст</span>
+            </label>
+            <label class="option-btn" id="modeTimed">
+              <input type="radio" name="mode" value="timed" hidden>
+              <span>⏱ 1 минута</span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Тема</span>
+          <div class="setting-options">
+            <label class="option-btn" id="themeLight">
+              <input type="radio" name="theme" value="light" hidden>
+              <span>☀️ Светлая</span>
+            </label>
+            <label class="option-btn" id="themeDark">
+              <input type="radio" name="theme" value="dark" hidden>
+              <span>🌙 Тёмная</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   </div>

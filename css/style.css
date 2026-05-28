@@ -193,20 +193,79 @@ body {
   border-color: var(--primary);
 }
 
-.theme-toggle {
-  padding: 10px 16px;
+.settings-btn {
+  padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
   color: var(--text);
-  font-size: 13px;
+  font-size: 16px;
   cursor: pointer;
   transition: all 0.15s;
+  line-height: 1;
 }
 
-.theme-toggle:hover {
+.settings-btn:hover {
   border-color: var(--primary);
+}
+
+.settings-card {
+  max-width: 420px;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setting-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.setting-options {
+  display: flex;
+  gap: 8px;
+}
+
+.option-btn {
+  flex: 1;
+  cursor: pointer;
+}
+
+.option-btn span {
+  display: block;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  text-align: center;
+  transition: all 0.15s;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.option-btn input:checked + span {
+  border-color: var(--primary);
+  background: rgba(108,92,231,0.08);
   color: var(--primary);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .option-btn input:checked + span {
+  background: rgba(139,124,247,0.15);
+}
+
+.option-btn:hover span {
+  border-color: var(--primary);
 }
 
 /* ====== GAME SCREEN ====== */
