@@ -439,6 +439,9 @@ battleBtn.addEventListener('click', () => {
 
 battleLobbyBack.addEventListener('click', () => showScreen(menuScreen));
 battleWaitBack.addEventListener('click', () => {
+  if (battleRoom) {
+    firebase.database().ref('battles/' + battleRoom).remove().catch(() => {});
+  }
   cleanupBattle();
   showBattleScreen(battleLobbyScreen);
 });
@@ -451,6 +454,8 @@ function cleanupBattle() {
   battleListeners.forEach(ref => { try { ref.off(); } catch(e) {} });
   battleListeners = [];
   battleRoom = null;
+  battleStartBtn.disabled = false;
+  battleStartBtn.textContent = '🚀 Начать игру';
   if (battleTimerInterval) { clearInterval(battleTimerInterval); battleTimerInterval = null; }
   battleResultsOverlay.classList.remove('active');
 }
