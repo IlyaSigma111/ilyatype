@@ -276,13 +276,13 @@ document.getElementById('textContainer').addEventListener('click', () => {
 
 // ====== Firebase ======
 const FIREBASE_CONFIG = {
-  apiKey: "XXXXXXXXXXXXXXXXXXXXXXX",
-  authDomain: "your-project.firebaseapp.com",
-  databaseURL: "https://your-project-default-rtdb.firebaseio.com",
-  projectId: "your-project",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:xxxxxxxxxxxxxxxx"
+  apiKey: "AIzaSyBVVo_3CoMGJrMYAmCexOFeZS3AIAzO-ck",
+  authDomain: "ilyatype-5e336.firebaseapp.com",
+  databaseURL: "https://ilyatype-5e336-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ilyatype-5e336",
+  storageBucket: "ilyatype-5e336.firebasestorage.app",
+  messagingSenderId: "728309192779",
+  appId: "1:728309192779:web:33af0253e48713c32d95ce"
 };
 
 let firebaseReady = false;
