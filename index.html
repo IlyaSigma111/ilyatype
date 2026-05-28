@@ -21,6 +21,7 @@
       <p class="subtitle">Тест скорости печати от Ильябуги Полимуся</p>
       <div class="menu-buttons">
         <button class="menu-btn primary" id="startBtn">🚀 Начать тест</button>
+        <button class="menu-btn secondary" id="battleBtn">⚔️ Баттл</button>
         <button class="menu-btn secondary" id="leaderboardBtn">🏆 Лидерборд</button>
       </div>
       <div class="menu-settings">
@@ -148,6 +149,130 @@
       <div class="results-actions">
         <button class="primary" id="resultRestart">Ещё раз</button>
         <button id="resultNewText">В меню</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SCREEN 4: BATTLE LOBBY ====== -->
+  <div id="battleLobbyScreen" class="screen">
+    <div class="lb-header">
+      <button class="back-btn" id="battleLobbyBack">← Назад</button>
+      <h2>⚔️ Баттл</h2>
+      <div></div>
+    </div>
+    <div class="battle-lobby">
+      <div class="battle-section">
+        <h3>Создать комнату</h3>
+        <input type="text" id="battleNickCreate" placeholder="Твой ник" maxlength="15">
+        <select id="battleCategory">
+          <option value="all">Любая категория</option>
+          <option value="classic">Классика</option>
+          <option value="modern">Современное</option>
+          <option value="science">Наука</option>
+          <option value="tech">Технологии</option>
+          <option value="prose">Проза</option>
+        </select>
+        <button class="game-btn primary" id="battleCreateBtn">Создать</button>
+      </div>
+      <div class="battle-divider">или</div>
+      <div class="battle-section">
+        <h3>Присоединиться</h3>
+        <input type="text" id="battleCodeInput" placeholder="Код комнаты" maxlength="4" class="battle-code-input">
+        <input type="text" id="battleNickJoin" placeholder="Твой ник" maxlength="15">
+        <button class="game-btn primary" id="battleJoinBtn">Присоединиться</button>
+        <p class="battle-error" id="battleError"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SCREEN 5: BATTLE WAITING ====== -->
+  <div id="battleWaitScreen" class="screen">
+    <div class="lb-header">
+      <button class="back-btn" id="battleWaitBack">← Назад</button>
+      <h2>⚔️ Ожидание</h2>
+      <div></div>
+    </div>
+    <div class="battle-wait">
+      <div class="battle-room-code">
+        <span class="battle-code-label">Код комнаты</span>
+        <span class="battle-code-value" id="battleRoomCode">----</span>
+      </div>
+      <div class="battle-players" id="battlePlayers">
+        <div class="battle-player battle-player--waiting">
+          <span class="bp-name" id="bpName1">—</span>
+          <span class="bp-status" id="bpStatus1">👤 Вы</span>
+        </div>
+        <div class="battle-vs">VS</div>
+        <div class="battle-player battle-player--waiting" id="bp2">
+          <span class="bp-name" id="bpName2">—</span>
+          <span class="bp-status" id="bpStatus2">⏳ Ожидание</span>
+        </div>
+      </div>
+      <div class="battle-spinner"></div>
+      <p class="battle-wait-msg" id="battleWaitMsg">Ожидание противника...</p>
+    </div>
+  </div>
+
+  <!-- ====== SCREEN 6: BATTLE GAME ====== -->
+  <div id="battleGameScreen" class="screen">
+    <div class="battle-opponent-bar" id="opponentBar" style="display:none">
+      <div class="battle-opponent-info">
+        <span class="bo-nick" id="boNick">Противник</span>
+        <span class="bo-wpm" id="boWpm">0 б/м</span>
+        <span class="bo-status" id="boStatus">печатает</span>
+      </div>
+      <div class="progress-bar" style="margin:4px 12px">
+        <div class="fill" id="boProgress" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="game-header">
+      <button class="back-btn" id="battleGameBack">← Выйти</button>
+      <div class="game-stats">
+        <div class="stat-item">
+          <div class="timer-ring-wrap">
+            <span class="mode-label">⚔️</span>
+            <svg viewBox="0 0 36 36" width="56" height="56">
+              <circle class="timer-ring-bg" cx="18" cy="18" r="15.5"/>
+              <circle class="timer-ring-fill" id="battleTimerRing" cx="18" cy="18" r="15.5"
+                stroke-dasharray="97.4" stroke-dashoffset="0"/>
+            </svg>
+            <span class="timer-ring-text" id="battleTimerDisplay">0:00</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value wpm" id="battleWpmDisplay">0</div>
+          <div class="stat-label">буковок/мин</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value acc" id="battleAccDisplay">100%</div>
+          <div class="stat-label">точность</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="fill" id="battleProgressFill"></div>
+    </div>
+
+    <div class="text-info">
+      <span id="battleTextSource"></span>
+      <span class="category-badge" id="battleTextCategory"></span>
+    </div>
+
+    <div class="text-container" id="battleTextContainer">
+      <div class="text-display" id="battleTextDisplay"></div>
+      <textarea class="hidden-input" id="battleHiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <!-- ====== BATTLE RESULTS OVERLAY ====== -->
+  <div class="results-overlay" id="battleResultsOverlay">
+    <div class="results-card">
+      <button id="closeBattleResults" class="results-close">✕</button>
+      <h2 id="battleResultTitle">⚔️ Баттл завершён</h2>
+      <div class="battle-result-players" id="battleResultPlayers"></div>
+      <div class="results-actions">
+        <button class="primary" id="battleResultMenu">В меню</button>
       </div>
     </div>
   </div>

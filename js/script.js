@@ -58,7 +58,7 @@ setTheme(getTheme());
 
 // ====== SCREENS ======
 function showScreen(s) {
-  [menuScreen, gameScreen, lbScreen].forEach(x => x.classList.remove('active'));
+  [menuScreen, gameScreen, lbScreen, battleLobbyScreen, battleWaitScreen, battleGameScreen].forEach(x => x.classList.remove('active'));
   s.classList.add('active');
 }
 
@@ -383,3 +383,363 @@ document.querySelectorAll('[name="theme"]').forEach(r => r.addEventListener('cha
 shareSection.style.display = 'none';
 loadLeaderboard();
 showScreen(menuScreen);
+
+// ====== BATTLE MODE ======
+const battleLobbyScreen = document.getElementById('battleLobbyScreen');
+const battleWaitScreen = document.getElementById('battleWaitScreen');
+const battleGameScreen = document.getElementById('battleGameScreen');
+const battleBtn = document.getElementById('battleBtn');
+const battleLobbyBack = document.getElementById('battleLobbyBack');
+const battleWaitBack = document.getElementById('battleWaitBack');
+const battleGameBack = document.getElementById('battleGameBack');
+const battleCreateBtn = document.getElementById('battleCreateBtn');
+const battleJoinBtn = document.getElementById('battleJoinBtn');
+const battleNickCreate = document.getElementById('battleNickCreate');
+const battleNickJoin = document.getElementById('battleNickJoin');
+const battleCodeInput = document.getElementById('battleCodeInput');
+const battleCategory = document.getElementById('battleCategory');
+const battleError = document.getElementById('battleError');
+const battleRoomCode = document.getElementById('battleRoomCode');
+const bpName1 = document.getElementById('bpName1');
+const bpName2 = document.getElementById('bpName2');
+const bpStatus1 = document.getElementById('bpStatus1');
+const bpStatus2 = document.getElementById('bpStatus2');
+const battleWaitMsg = document.getElementById('battleWaitMsg');
+const boNick = document.getElementById('boNick');
+const boWpm = document.getElementById('boWpm');
+const boStatus = document.getElementById('boStatus');
+const boProgress = document.getElementById('boProgress');
+const closeBattleResults = document.getElementById('closeBattleResults');
+const battleResultTitle = document.getElementById('battleResultTitle');
+const battleResultPlayers = document.getElementById('battleResultPlayers');
+const battleResultMenu = document.getElementById('battleResultMenu');
+const battleResultsOverlay = document.getElementById('battleResultsOverlay');
+
+let battleRoom = null;
+let battlePlayerNum = 0;
+let battleNick = '';
+let battleOpponentNick = '';
+let battleListeners = [];
+
+function genRoomCode() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+function showBattleScreen(s) {
+  [menuScreen, gameScreen, lbScreen, battleLobbyScreen, battleWaitScreen, battleGameScreen].forEach(x => x.classList.remove('active'));
+  s.classList.add('active');
+}
+
+battleBtn.addEventListener('click', () => {
+  battleError.textContent = '';
+  if (!firebaseReady) { battleError.textContent = 'Firebase не подключён'; return; }
+  showBattleScreen(battleLobbyScreen);
+});
+
+battleLobbyBack.addEventListener('click', () => showScreen(menuScreen));
+battleWaitBack.addEventListener('click', () => {
+  cleanupBattle();
+  showBattleScreen(battleLobbyScreen);
+});
+battleGameBack.addEventListener('click', () => {
+  cleanupBattle();
+  showScreen(menuScreen);
+});
+
+function cleanupBattle() {
+  battleListeners.forEach(ref => { try { ref.off(); } catch(e) {} });
+  battleListeners = [];
+  battleRoom = null;
+  if (battleTimerInterval) { clearInterval(battleTimerInterval); battleTimerInterval = null; }
+  battleResultsOverlay.classList.remove('active');
+}
+
+battleCreateBtn.addEventListener('click', () => {
+  const nick = battleNickCreate.value.trim();
+  if (!nick) { battleError.textContent = 'Введи ник'; return; }
+  battleError.textContent = '';
+  const code = genRoomCode();
+  battleRoom = code;
+  battleNick = nick;
+  battlePlayerNum = 1;
+  const cat = battleCategory.value;
+
+  const ref = firebase.database().ref('battles/' + code);
+  ref.set({
+    status: 'waiting',
+    category: cat,
+    players: {
+      player1: { nickname: nick, progress: 0, wpm: 0, accuracy: 100, finished: false, joinedAt: Date.now() }
+    },
+    createdAt: Date.now()
+  }).then(() => {
+    battleRoomCode.textContent = code;
+    bpName1.textContent = nick;
+    bpStatus1.textContent = '👤 Вы';
+    bpName2.textContent = '—';
+    bpStatus2.textContent = '⏳ Ожидание';
+    battleWaitMsg.textContent = 'Ожидание противника...';
+    showBattleScreen(battleWaitScreen);
+    listenBattle(code, true);
+  }).catch(() => {
+    battleError.textContent = 'Не удалось создать комнату';
+  });
+});
+
+battleJoinBtn.addEventListener('click', () => {
+  const code = battleCodeInput.value.trim();
+  const nick = battleNickJoin.value.trim();
+  if (!code || code.length !== 4) { battleError.textContent = 'Введи код комнаты (4 цифры)'; return; }
+  if (!nick) { battleError.textContent = 'Введи ник'; return; }
+  battleError.textContent = '';
+  battleRoom = code;
+  battleNick = nick;
+  battlePlayerNum = 2;
+
+  const ref = firebase.database().ref('battles/' + code);
+  ref.once('value', snap => {
+    const data = snap.val();
+    if (!data) { battleError.textContent = 'Комната не найдена'; return; }
+    if (data.status !== 'waiting') { battleError.textContent = 'Комната уже занята или игра началась'; return; }
+    if (data.players.player2) { battleError.textContent = 'Комната уже заполнена'; return; }
+
+    ref.child('players/player2').set({
+      nickname: nick, progress: 0, wpm: 0, accuracy: 100, finished: false, joinedAt: Date.now()
+    }).then(() => {
+      bpName1.textContent = data.players.player1.nickname;
+      battleOpponentNick = data.players.player1.nickname;
+      bpStatus1.textContent = '👤 Противник';
+      bpName2.textContent = nick;
+      bpStatus2.textContent = '👤 Вы';
+      battleWaitMsg.textContent = 'Противник найден!';
+      showBattleScreen(battleWaitScreen);
+      startBattleCountdown(code);
+    }).catch(() => {
+      battleError.textContent = 'Не удалось присоединиться';
+    });
+  });
+});
+
+function listenBattle(code, isCreator) {
+  const ref = firebase.database().ref('battles/' + code);
+  const listener = ref.on('value', snap => {
+    const data = snap.val();
+    if (!data) return;
+
+    if (data.status === 'waiting' && isCreator) {
+      if (data.players.player2) {
+        battleOpponentNick = data.players.player2.nickname;
+        bpName2.textContent = data.players.player2.nickname;
+        bpStatus2.textContent = '👤 Противник';
+        battleWaitMsg.textContent = 'Противник найден!';
+        startBattleCountdown(code);
+      }
+    }
+
+    if (data.status === 'playing' || data.status === 'finished') {
+      const me = 'player' + battlePlayerNum;
+      const opp = battlePlayerNum === 1 ? 'player2' : 'player1';
+      const op = data.players && data.players[opp];
+      if (op) {
+        boNick.textContent = op.nickname;
+        boWpm.textContent = op.wpm + ' б/м';
+        const pct = data.text ? Math.round(op.progress / data.text.length * 100) : 0;
+        boProgress.style.width = Math.min(pct, 100) + '%';
+        boStatus.textContent = op.finished ? '🏁 готов' : 'печатает';
+      }
+      if (data.status === 'finished') {
+        showBattleResults(data);
+      }
+    }
+  });
+  battleListeners.push({ ref, off: () => ref.off('value', listener) });
+}
+
+function startBattleCountdown(code) {
+  cleanupBattle();
+  battleRoom = code;
+
+  const ref = firebase.database().ref('battles/' + code);
+
+  const textPool = [...TEXTS, ...NORMAL_TEXTS, ...TEXTS_ALABUGA];
+  const cat = battleCategory.value;
+  let pool = textPool.filter(t => cat === 'all' || t.category === cat);
+  if (!pool.length) pool = textPool;
+  const textObj = pool[Math.floor(Math.random() * pool.length)];
+  const sharedText = textObj.text;
+
+  ref.update({
+    status: 'playing',
+    text: sharedText,
+    textObj: { category: textObj.category, difficulty: textObj.difficulty, source: textObj.source },
+    startedAt: Date.now()
+  });
+
+  startBattleGame(sharedText, textObj, code);
+}
+
+function startBattleGame(text, textObj, code) {
+  battleRoom = code;
+  const bChars = [...text].map(ch => ({ char: ch, status: 'pending' }));
+  let bCurrentIndex = 0;
+  let bCorrect = 0;
+  let bTotal = 0;
+  let bErrors = 0;
+  let bTimerStart = null;
+  let bTimerInterval = null;
+  let bIsFinished = false;
+
+  const bDisplay = document.getElementById('battleTextDisplay');
+  const bInput = document.getElementById('battleHiddenInput');
+  const bTimerDisplay = document.getElementById('battleTimerDisplay');
+  const bTimerRing = document.getElementById('battleTimerRing');
+  const bWpmDisplay = document.getElementById('battleWpmDisplay');
+  const bAccDisplay = document.getElementById('battleAccDisplay');
+  const bProgressFill = document.getElementById('battleProgressFill');
+  const bTextSource = document.getElementById('battleTextSource');
+  const bTextCategory = document.getElementById('battleTextCategory');
+
+  bTextSource.textContent = textObj.source;
+  const labels = {classic:'Классика',modern:'Современное',science:'Наука',tech:'Технологии',prose:'Проза'};
+  bTextCategory.textContent = labels[textObj.category] || textObj.category;
+
+  function bRender() {
+    bDisplay.innerHTML = bChars.map((ch, i) => {
+      let cls = 'char';
+      if (ch.char === ' ') cls += ' space';
+      if (ch.status === 'pending') cls += ' pending';
+      if (ch.status === 'correct') cls += ' correct';
+      if (ch.status === 'incorrect') cls += ' incorrect';
+      if (i === bCurrentIndex && !bIsFinished) cls += ' current';
+      const txt = ch.char === ' ' ? '\u00A0' : ch.char;
+      return `<span class="${cls}">${txt}</span>`;
+    }).join('');
+    if (!bIsFinished) {
+      const el = bDisplay.querySelector('.char.current');
+      if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  function bUpdateStats() {
+    const elapsed = bTimerStart ? (Date.now() - bTimerStart) / 1000 : 0;
+    const mins = elapsed / 60;
+    const net = mins > 0 ? Math.round(bCorrect / mins) : 0;
+    const dnom = bCorrect + bErrors;
+    const acc = dnom > 0 ? Math.round(bCorrect / dnom * 100) : 100;
+    bWpmDisplay.textContent = net;
+    bAccDisplay.textContent = acc + '%';
+    bProgressFill.style.width = (bCurrentIndex / bChars.length * 100) + '%';
+
+    const m = Math.floor(elapsed / 60);
+    const s = Math.floor(elapsed % 60);
+    bTimerDisplay.textContent = m + ':' + String(s).padStart(2, '0');
+    bTimerRing.setAttribute('stroke-dashoffset', 0);
+
+    const me = 'player' + battlePlayerNum;
+    const data = {};
+    data['players/' + me + '/progress'] = bCurrentIndex;
+    data['players/' + me + '/wpm'] = net;
+    data['players/' + me + '/accuracy'] = acc;
+    firebase.database().ref('battles/' + battleRoom).update(data);
+  }
+
+  function bHandleChar(char) {
+    if (bIsFinished) return;
+    if (bCurrentIndex >= bChars.length) return;
+    if (!bTimerStart) { bTimerStart = Date.now(); bTimerInterval = setInterval(bUpdateStats, 200); }
+
+    const normalize = c => c === 'ё' ? 'е' : c === 'Ё' ? 'Е' : c;
+    const expected = bChars[bCurrentIndex].char;
+    const isCorrect = normalize(char) === normalize(expected);
+    bTotal++;
+
+    if (isCorrect) {
+      if (bChars[bCurrentIndex].status !== 'correct') bCorrect++;
+      bChars[bCurrentIndex].status = 'correct';
+      bCurrentIndex++;
+    } else {
+      if (bChars[bCurrentIndex].status !== 'incorrect') bErrors++;
+      bChars[bCurrentIndex].status = 'incorrect';
+    }
+
+    bRender();
+    bUpdateStats();
+
+    if (bCurrentIndex >= bChars.length) {
+      bIsFinished = true;
+      if (bTimerInterval) { clearInterval(bTimerInterval); bTimerInterval = null; }
+      const elapsed = bTimerStart ? (Date.now() - bTimerStart) / 1000 : 0;
+      firebase.database().ref('battles/' + battleRoom + '/players/player' + battlePlayerNum).update({
+        finished: true, finishedAt: Date.now(), time: elapsed
+      });
+    }
+  }
+
+  bInput.addEventListener('keydown', function bKeydown(e) {
+    if (e.key === 'Backspace' || e.ctrlKey || e.metaKey || e.altKey) e.preventDefault();
+  });
+  bInput.addEventListener('input', function bInputHandler() {
+    if (bIsFinished) { bInput.value = ''; return; }
+    const v = bInput.value;
+    if (v.length) bHandleChar(v[v.length - 1]);
+    bInput.value = '';
+  });
+  document.getElementById('battleTextContainer').addEventListener('click', () => { if (!bIsFinished) bInput.focus(); });
+
+  bRender();
+  bInput.value = '';
+  bInput.focus();
+
+  showBattleScreen(battleGameScreen);
+
+  listenBattle(battleRoom, false);
+}
+
+function showBattleResults(data) {
+  const p1 = data.players.player1 || {};
+  const p2 = data.players.player2 || {};
+  let winner = null;
+  if (p1.finished && p2.finished) {
+    winner = p1.finishedAt < p2.finishedAt ? 'player1' : 'player2';
+  } else if (p1.finished) {
+    winner = 'player1';
+  } else if (p2.finished) {
+    winner = 'player2';
+  }
+
+  const myKey = 'player' + battlePlayerNum;
+  const oppKey = battlePlayerNum === 1 ? 'player2' : 'player1';
+  const isWinner = winner === myKey;
+
+  battleResultTitle.textContent = isWinner ? '🏆 Вы победили!' : '😔 Вы проиграли';
+
+  battleResultPlayers.innerHTML = '';
+  [p1, p2].forEach((p, i) => {
+    const key = i === 0 ? 'player1' : 'player2';
+    const row = document.createElement('div');
+    row.className = 'battle-result-row' + (key === winner ? ' winner' : '');
+    row.innerHTML = `
+      <div>
+        <div class="br-name">${escHtml(p.nickname || '—')}</div>
+        <div class="br-stats">${p.wpm||0} б/м · ${p.accuracy||100}% · ${p.finished ? '✅' : '❌'}</div>
+      </div>
+      <div class="br-badge ${key === winner ? 'win' : 'lose'}">${key === winner ? 'Победа' : 'Поражение'}</div>
+    `;
+    battleResultPlayers.appendChild(row);
+  });
+
+  battleResultsOverlay.classList.add('active');
+}
+
+closeBattleResults.addEventListener('click', () => { cleanupBattle(); showScreen(menuScreen); });
+battleResultsOverlay.addEventListener('click', e => { if (e.target === battleResultsOverlay) { cleanupBattle(); showScreen(menuScreen); } });
+battleResultMenu.addEventListener('click', () => { cleanupBattle(); showScreen(menuScreen); });
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    battleResultsOverlay.classList.remove('active');
+    settingsOverlay.classList.remove('active');
+    overlay.classList.remove('active');
+    if (battleGameScreen.classList.contains('active')) { cleanupBattle(); showScreen(menuScreen); }
+  }
+});
