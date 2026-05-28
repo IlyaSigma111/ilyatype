@@ -44,7 +44,7 @@ const closeResults = document.getElementById('closeResults');
 const CIRC = 97.4;
 
 // ====== SETTINGS STATE ======
-let textType = localStorage.getItem('ilt-textType') || 'funny';
+let textType = localStorage.getItem('ilt-textType') || 'normal';
 let gameMode = localStorage.getItem('ilt-mode') || 'text';
 
 // ====== THEME ======
@@ -95,7 +95,7 @@ let tErrors = 0;
 
 // ====== TEXTS ======
 function getTextPool() {
-  const pool = textType === 'normal' ? NORMAL_TEXTS : TEXTS;
+  const pool = textType === 'normal' ? NORMAL_TEXTS : textType === 'alabuga' ? TEXTS_ALABUGA : TEXTS;
   const d = diffSel.value, c = catSel.value;
   return pool.filter(t => (d === 'all' || t.difficulty === d) && (c === 'all' || t.category === c));
 }
@@ -104,7 +104,7 @@ let currentTextObj = null;
 
 function pickText() {
   let pool = getTextPool();
-  if (!pool.length) pool = textType === 'normal' ? NORMAL_TEXTS : TEXTS;
+  if (!pool.length) pool = textType === 'normal' ? NORMAL_TEXTS : textType === 'alabuga' ? TEXTS_ALABUGA : TEXTS;
   currentTextObj = pool[Math.floor(Math.random() * pool.length)];
   textSource.textContent = '📖 ' + currentTextObj.source;
   const labels = {classic:'Классика',modern:'Современное',science:'Наука',tech:'Технологии',prose:'Проза'};
