@@ -274,4 +274,132 @@ document.getElementById('textContainer').addEventListener('click', () => {
   if (!isFinished) input.focus();
 });
 
+// ====== Firebase ======
+const FIREBASE_CONFIG = {
+  apiKey: "XXXXXXXXXXXXXXXXXXXXXXX",
+  authDomain: "your-project.firebaseapp.com",
+  databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+  projectId: "your-project",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:xxxxxxxxxxxxxxxx"
+};
+
+let firebaseReady = false;
+try {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  firebaseReady = true;
+} catch (e) {
+  console.warn('Firebase not configured');
+}
+
+const shareSection = document.getElementById('shareSection');
+const nicknameInput = document.getElementById('nicknameInput');
+const shareBtn = document.getElementById('shareBtn');
+const shareMsg = document.getElementById('shareMsg');
+const lbEntries = document.getElementById('lbEntries');
+const lbToggle = document.getElementById('lbToggle');
+const lbBody = document.getElementById('lbBody');
+shareSection.style.display = 'none';
+
+let lastResult = null;
+
+function saveResult(nickname, wpm, accuracy) {
+  if (!firebaseReady) return Promise.reject('Firebase not ready');
+  const ref = firebase.database().ref('leaderboard');
+  return ref.push({
+    nickname,
+    wpm,
+    accuracy,
+    timestamp: Date.now()
+  });
+}
+
+function loadLeaderboard() {
+  if (!firebaseReady) {
+    lbEntries.innerHTML = '<tr><td colspan="4" class="leaderboard-empty">Firebase не настроен. Впиши свои ключи в script.js</td></tr>';
+    return;
+  }
+  const ref = firebase.database().ref('leaderboard');
+  ref.orderByChild('wpm').limitToLast(50).on('value', (snap) => {
+    const data = snap.val();
+    lbEntries.innerHTML = '';
+    if (!data) {
+      lbEntries.innerHTML = '<tr><td colspan="4" class="leaderboard-empty">Пока никого нет. Будь первым!</td></tr>';
+      return;
+    }
+    const entries = Object.entries(data).map(([id, v]) => v).sort((a, b) => b.wpm - a.wpm);
+    entries.slice(0, 20).forEach((entry, i) => {
+      const tr = document.createElement('tr');
+      const rank = i + 1;
+      tr.innerHTML = `
+        <td class="rank rank-${rank <= 3 ? rank : ''}">${rank}</td>
+        <td class="nickname">${escapeHtml(entry.nickname || 'Анонимус')}</td>
+        <td class="lb-wpm">${entry.wpm}</td>
+        <td class="lb-acc">${entry.accuracy}%</td>
+      `;
+      lbEntries.appendChild(tr);
+    });
+  });
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+shareBtn.addEventListener('click', () => {
+  const nick = nicknameInput.value.trim();
+  if (!nick) {
+    shareMsg.textContent = 'Введи никнейм, енот';
+    shareMsg.className = 'share-msg error';
+    return;
+  }
+  if (!lastResult) return;
+  shareBtn.disabled = true;
+  shareMsg.textContent = 'Отправляем...';
+  shareMsg.className = 'share-msg';
+  saveResult(nick, lastResult.wpm, lastResult.accuracy)
+    .then(() => {
+      shareMsg.textContent = '✅ Улетело в топ!';
+      shareMsg.className = 'share-msg success';
+      nicknameInput.disabled = true;
+    })
+    .catch((err) => {
+      shareMsg.textContent = '❌ Не вышло. Попробуй ещё';
+      shareMsg.className = 'share-msg error';
+      shareBtn.disabled = false;
+    });
+});
+
+nicknameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') shareBtn.click();
+});
+
+lbToggle.addEventListener('click', () => {
+  lbBody.classList.toggle('collapsed');
+  lbToggle.textContent = lbBody.classList.contains('collapsed') ? '▼ развернуть' : '▲ свернуть';
+});
+
+loadLeaderboard();
+
+// Patch endGame to save last result and reset share UI
+const origEndGame = endGame;
+endGame = function() {
+  origEndGame.call(this);
+  const elapsed = timerDuration - timeLeft;
+  const minutes = elapsed / 60;
+  const net = minutes > 0 ? Math.round((correctCount / Math.max(minutes, 0.01))) : 0;
+  const denom = correctCount + errors;
+  const acc = denom > 0 ? Math.round((correctCount / denom) * 100) : 100;
+  lastResult = { wpm: net, accuracy: acc };
+  shareBtn.disabled = false;
+  nicknameInput.disabled = false;
+  nicknameInput.value = '';
+  shareMsg.textContent = '';
+  shareMsg.className = 'share-msg';
+  shareSection.style.display = firebaseReady ? 'block' : 'none';
+};
+
 startGame();

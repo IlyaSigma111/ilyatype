@@ -6,6 +6,8 @@
   <title>Ильтест — тест скорости печати от Ильябуги Полимуся</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦝</text></svg>">
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
   <header>
@@ -69,6 +71,21 @@
     </div>
 
     <button class="restart-btn" id="restartBtn">Новый текст</button>
+
+    <div class="leaderboard" id="leaderboard">
+      <div class="leaderboard-header">
+        <h3>🏆 Доска почёта</h3>
+        <button id="lbToggle">▲ свернуть</button>
+      </div>
+      <div class="leaderboard-body" id="lbBody">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Никнейм</th><th>Буковки/мин</th><th>Точность</th></tr>
+          </thead>
+          <tbody id="lbEntries"></tbody>
+        </table>
+      </div>
+    </div>
   </main>
 
   <div class="results-overlay" id="resultsOverlay">
@@ -99,6 +116,14 @@
           <div class="rvalue" id="resultErrors">0</div>
           <div class="rlabel">Корявостей</div>
         </div>
+      </div>
+      <div class="share-section" id="shareSection">
+        <p>🔥 Хочешь позориться вместе со всеми?</p>
+        <div class="share-input">
+          <input type="text" id="nicknameInput" placeholder="Твой никнейм" maxlength="20">
+          <button id="shareBtn">Отправить в топ</button>
+        </div>
+        <p class="share-msg" id="shareMsg"></p>
       </div>
       <div class="results-actions">
         <button class="primary" id="resultRestart">Ещё раз</button>
