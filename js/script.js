@@ -58,7 +58,7 @@ setTheme(getTheme());
 
 // ====== SCREENS ======
 function showScreen(s) {
-  [menuScreen, gameScreen, lbScreen, battleLobbyScreen, battleWaitScreen, battleGameScreen].forEach(x => x.classList.remove('active'));
+  [menuScreen, gameScreen, lbScreen].forEach(x => x.classList.remove('active'));
   s.classList.add('active');
 }
 
@@ -432,7 +432,6 @@ function showBattleScreen(s) {
 
 battleBtn.addEventListener('click', () => {
   battleError.textContent = '';
-  if (!firebaseReady) { battleError.textContent = 'Firebase не подключён'; return; }
   showBattleScreen(battleLobbyScreen);
 });
 
