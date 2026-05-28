@@ -10,49 +10,68 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <header>
-    <h1>🦝 Ильтест</h1>
-    <div class="settings-bar">
-      <select id="difficulty">
-        <option value="all">Любая боль</option>
-        <option value="easy">Лёгкая боль</option>
-        <option value="medium">Средняя боль</option>
-        <option value="hard">АДСКАЯ БОЛЬ</option>
-      </select>
-      <select id="category">
-        <option value="all">Всё подряд</option>
-        <option value="classic">Дедовские мудрости</option>
-        <option value="modern">Кринж века</option>
-        <option value="science">Научные бредни</option>
-        <option value="tech">Техно-дичь</option>
-        <option value="prose">Жиза</option>
-      </select>
-      <select id="timeSelect">
-        <option value="15">15 сек</option>
-        <option value="30">30 сек</option>
-        <option value="60" selected>60 сек</option>
-        <option value="120">120 сек</option>
-      </select>
-    </div>
-  </header>
 
-  <main>
-    <div class="stats-bar">
-      <div class="stat">
-        <div class="value" id="timer">60</div>
-        <div class="label">Время</div>
+  <!-- ====== SCREEN 1: MAIN MENU ====== -->
+  <div id="menuScreen" class="screen active">
+    <div class="parallax-bg" id="parallaxBg"></div>
+    <div class="particles" id="particles"></div>
+    <div class="menu-content">
+      <span class="logo">🦝</span>
+      <h1>Ильтест</h1>
+      <p class="subtitle">Тест скорости печати от Ильябуги Полимуся</p>
+      <div class="menu-buttons">
+        <button class="menu-btn primary" id="startBtn">🚀 Начать тест</button>
+        <button class="menu-btn secondary" id="leaderboardBtn">🏆 Лидерборд</button>
       </div>
-      <div class="stat">
-        <div class="value" id="wpm">0</div>
-        <div class="label">Буковки/мин</div>
+      <div class="menu-settings">
+        <select id="difficulty">
+          <option value="all">Любая боль</option>
+          <option value="easy">Лёгкая боль</option>
+          <option value="medium">Средняя боль</option>
+          <option value="hard">АДСКАЯ БОЛЬ</option>
+        </select>
+        <select id="category">
+          <option value="all">Всё подряд</option>
+          <option value="classic">Дедовские мудрости</option>
+          <option value="modern">Кринж века</option>
+          <option value="science">Научные бредни</option>
+          <option value="tech">Техно-дичь</option>
+          <option value="prose">Жиза</option>
+        </select>
+        <select id="timeSelect">
+          <option value="30">30 сек</option>
+          <option value="60" selected>60 сек</option>
+          <option value="120">120 сек</option>
+          <option value="0">♾ Без лимита</option>
+        </select>
+        <button class="theme-toggle" id="themeToggle">🌙 Тёмная</button>
       </div>
-      <div class="stat">
-        <div class="value" id="accuracy">100%</div>
-        <div class="label">Точность</div>
-      </div>
-      <div class="stat">
-        <div class="value" id="progress">0/0</div>
-        <div class="label">Прогресс</div>
+    </div>
+  </div>
+
+  <!-- ====== SCREEN 2: GAME ====== -->
+  <div id="gameScreen" class="screen">
+    <div class="game-header">
+      <button class="back-btn" id="backToMenu">← Назад</button>
+      <div class="game-stats">
+        <div class="stat-item">
+          <div class="timer-ring-wrap">
+            <svg viewBox="0 0 36 36" width="56" height="56">
+              <circle class="timer-ring-bg" cx="18" cy="18" r="15.5"/>
+              <circle class="timer-ring-fill" id="timerRing" cx="18" cy="18" r="15.5"
+                stroke-dasharray="97.4" stroke-dashoffset="0"/>
+            </svg>
+            <span class="timer-ring-text" id="timerDisplay">60</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value wpm" id="wpmDisplay">0</div>
+          <div class="stat-label">буковок/мин</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value acc" id="accuracyDisplay">100%</div>
+          <div class="stat-label">точность</div>
+        </div>
       </div>
     </div>
 
@@ -70,24 +89,29 @@
       <textarea class="hidden-input" id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
     </div>
 
-    <button class="restart-btn" id="restartBtn">Новый текст</button>
-
-    <div class="leaderboard" id="leaderboard">
-      <div class="leaderboard-header">
-        <h3>🏆 Доска почёта</h3>
-        <button id="lbToggle">▲ свернуть</button>
-      </div>
-      <div class="leaderboard-body" id="lbBody">
-        <table>
-          <thead>
-            <tr><th>#</th><th>Никнейм</th><th>Буковки/мин</th><th>Точность</th></tr>
-          </thead>
-          <tbody id="lbEntries"></tbody>
-        </table>
-      </div>
+    <div class="game-footer">
+      <button class="game-btn primary" id="restartBtn">🔄 Новый текст</button>
     </div>
-  </main>
+  </div>
 
+  <!-- ====== SCREEN 3: LEADERBOARD ====== -->
+  <div id="lbScreen" class="screen">
+    <div class="lb-header">
+      <button class="back-btn" id="lbBack">← Назад</button>
+      <h2>🏆 Доска почёта</h2>
+      <div></div>
+    </div>
+    <div class="lb-card">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Никнейм</th><th>Буковки/мин</th><th>Точность</th></tr>
+        </thead>
+        <tbody id="lbEntries"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ====== RESULTS OVERLAY ====== -->
   <div class="results-overlay" id="resultsOverlay">
     <div class="results-card">
       <h2>🏆 Итоги позорища</h2>
@@ -127,7 +151,7 @@
       </div>
       <div class="results-actions">
         <button class="primary" id="resultRestart">Ещё раз</button>
-        <button id="resultNewText">Новый текст</button>
+        <button id="resultNewText">В меню</button>
       </div>
     </div>
   </div>

@@ -1,9 +1,24 @@
+// ====== DOM REFS ======
+const menuScreen = document.getElementById('menuScreen');
+const gameScreen = document.getElementById('gameScreen');
+const lbScreen = document.getElementById('lbScreen');
+const startBtn = document.getElementById('startBtn');
+const leaderboardBtn = document.getElementById('leaderboardBtn');
+const backToMenu = document.getElementById('backToMenu');
+const lbBack = document.getElementById('lbBack');
+const themeToggle = document.getElementById('themeToggle');
+const parallaxBg = document.getElementById('parallaxBg');
+const particles = document.getElementById('particles');
+const difficultySelect = document.getElementById('difficulty');
+const categorySelect = document.getElementById('category');
+const timeSelect = document.getElementById('timeSelect');
 const display = document.getElementById('textDisplay');
 const input = document.getElementById('hiddenInput');
-const timerEl = document.getElementById('timer');
-const wpmEl = document.getElementById('wpm');
-const accuracyEl = document.getElementById('accuracy');
-const progressEl = document.getElementById('progress');
+const textContainer = document.getElementById('textContainer');
+const timerDisplay = document.getElementById('timerDisplay');
+const timerRing = document.getElementById('timerRing');
+const wpmDisplay = document.getElementById('wpmDisplay');
+const accuracyDisplay = document.getElementById('accuracyDisplay');
 const progressFill = document.getElementById('progressFill');
 const textSource = document.getElementById('textSource');
 const textCategory = document.getElementById('textCategory');
@@ -17,16 +32,61 @@ const resultTime = document.getElementById('resultTime');
 const resultErrors = document.getElementById('resultErrors');
 const resultRestart = document.getElementById('resultRestart');
 const resultNewText = document.getElementById('resultNewText');
-const difficultySelect = document.getElementById('difficulty');
-const categorySelect = document.getElementById('category');
-const timeSelect = document.getElementById('timeSelect');
+const shareSection = document.getElementById('shareSection');
+const nicknameInput = document.getElementById('nicknameInput');
+const shareBtn = document.getElementById('shareBtn');
+const shareMsg = document.getElementById('shareMsg');
+const lbEntries = document.getElementById('lbEntries');
 
-const timerDurationDefault = 60;
+const RING_CIRCUMFERENCE = 97.4;
+
+// ====== THEME ======
+function getTheme() { return localStorage.getItem('iltytest-theme') || 'light'; }
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('iltytest-theme', t);
+  themeToggle.textContent = t === 'dark' ? '☀️ Светлая' : '🌙 Тёмная';
+}
+setTheme(getTheme());
+themeToggle.addEventListener('click', () => {
+  setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+});
+
+// ====== SCREENS ======
+function showScreen(screen) {
+  [menuScreen, gameScreen, lbScreen].forEach(s => s.classList.remove('active'));
+  screen.classList.add('active');
+}
+
+// ====== PARALLAX ======
+function createParticles() {
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.width = p.style.height = (2 + Math.random() * 3) + 'px';
+    p.style.animationDuration = (15 + Math.random() * 25) + 's';
+    p.style.animationDelay = (Math.random() * 20) + 's';
+    particles.appendChild(p);
+  }
+}
+createParticles();
+
+document.addEventListener('mousemove', (e) => {
+  if (!menuScreen.classList.contains('active')) return;
+  const x = (e.clientX / window.innerWidth - 0.5) * 20;
+  const y = (e.clientY / window.innerHeight - 0.5) * 20;
+  parallaxBg.style.transform = `translate(${x}px, ${y}px)`;
+});
+
+// ====== GAME STATE ======
 let timerDuration = 60;
 let timeLeft = 60;
 let timerInterval = null;
+let timerStart = null;
 let isRunning = false;
 let isFinished = false;
+let isUnlimited = false;
 
 let currentText = '';
 let chars = [];
@@ -34,16 +94,8 @@ let currentIndex = 0;
 let correctCount = 0;
 let totalTyped = 0;
 let errors = 0;
-let typedChars = [];
 
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
+// ====== TEXT UTILS ======
 function getFilteredTexts() {
   const diff = difficultySelect.value;
   const cat = categorySelect.value;
@@ -60,11 +112,8 @@ function pickText() {
   const text = pool[Math.floor(Math.random() * pool.length)];
   textSource.textContent = '📖 ' + text.source;
   const catLabels = {
-    classic: 'Дедовские мудрости',
-    modern: 'Кринж века',
-    science: 'Научные бредни',
-    tech: 'Техно-дичь',
-    prose: 'Жиза'
+    classic: 'Дедовские мудрости', modern: 'Кринж века',
+    science: 'Научные бредни', tech: 'Техно-дичь', prose: 'Жиза'
   };
   textCategory.textContent = catLabels[text.category] || text.category;
   return text.text;
@@ -72,16 +121,11 @@ function pickText() {
 
 function prepareText(text) {
   currentText = text;
-  chars = text.split('').map((ch, i) => ({
-    char: ch,
-    status: 'pending',
-    index: i
-  }));
+  chars = text.split('').map((ch, i) => ({ char: ch, status: 'pending', index: i }));
   currentIndex = 0;
   correctCount = 0;
   totalTyped = 0;
   errors = 0;
-  typedChars = [];
   renderText();
   updateStats();
 }
@@ -100,71 +144,104 @@ function renderText() {
     display.appendChild(span);
   });
   if (!isFinished) {
-    const currentEl = display.querySelector('.char.current');
-    if (currentEl) currentEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const el = display.querySelector('.char.current');
+    if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 }
 
 function updateStats() {
-  const elapsed = timerDuration - timeLeft;
+  const elapsed = isRunning && timerStart ? (Date.now() - timerStart) / 1000 : 0;
   const minutes = elapsed / 60;
-
   const raw = minutes > 0 ? Math.round(totalTyped / minutes) : 0;
-  const net = minutes > 0 ? Math.round((correctCount / Math.max(minutes, 0.01))) : 0;
-
-  wpmEl.textContent = net;
-  timerEl.textContent = timeLeft;
-  progressEl.textContent = `${currentIndex}/${chars.length}`;
-  progressFill.style.width = `${chars.length > 0 ? (currentIndex / chars.length) * 100 : 0}%`;
-
+  const net = minutes > 0 ? Math.round(correctCount / minutes) : 0;
   const denom = correctCount + errors;
   const acc = denom > 0 ? Math.round((correctCount / denom) * 100) : 100;
-  accuracyEl.textContent = acc + '%';
+
+  wpmDisplay.textContent = net;
+  accuracyDisplay.textContent = acc + '%';
+  progressFill.style.width = chars.length > 0 ? (currentIndex / chars.length) * 100 + '%' : '0%';
 }
 
-function getCharacterCount(text) {
-  return text.replace(/\s/g, '').length;
+// ====== TIMER ======
+function updateTimerRing(t) {
+  const frac = timerDuration > 0 ? t / timerDuration : 0;
+  const offset = RING_CIRCUMFERENCE * (1 - frac);
+  timerRing.setAttribute('stroke-dashoffset', offset);
+  timerDisplay.textContent = Math.ceil(t);
 }
 
-function startGame() {
+function stopTimer() {
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
   }
-  timerDuration = parseInt(timeSelect.value);
+}
+
+function startTimer() {
+  if (isUnlimited) return;
+  timerStart = Date.now();
+  if (timerInterval) stopTimer();
+  timerInterval = setInterval(() => {
+    const elapsed = (Date.now() - timerStart) / 1000;
+    timeLeft = Math.max(0, timerDuration - elapsed);
+    timerDisplay.textContent = Math.ceil(timeLeft);
+    updateTimerRing(timeLeft);
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      updateTimerRing(0);
+      endGame();
+    }
+  }, 100);
+}
+
+// ====== GAME FLOW ======
+function startGame() {
+  stopTimer();
+  timerStart = null;
+  const tVal = timeSelect.value;
+  isUnlimited = tVal === '0';
+  timerDuration = isUnlimited ? 60 : parseInt(tVal);
   timeLeft = timerDuration;
   isRunning = true;
   isFinished = false;
-  const t = pickText();
-  prepareText(t);
+
+  const text = pickText();
+  prepareText(text);
   input.value = '';
   input.focus();
-  timerEl.textContent = timeLeft;
+  timerDisplay.textContent = isUnlimited ? '♾' : timerDuration;
+  updateTimerRing(timerDuration);
   resultsOverlay.classList.remove('active');
+  showScreen(gameScreen);
 }
 
 function endGame() {
   isRunning = false;
   isFinished = true;
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
+  stopTimer();
   renderText();
 
-  const elapsed = timerDuration - timeLeft;
+  const elapsed = timerStart ? (Date.now() - timerStart) / 1000 : 0;
   const minutes = elapsed / 60;
   const raw = minutes > 0 ? Math.round(totalTyped / minutes) : 0;
-  const net = minutes > 0 ? Math.round((correctCount / Math.max(minutes, 0.01))) : 0;
+  const net = minutes > 0 ? Math.round(correctCount / minutes) : 0;
   const denom = correctCount + errors;
   const acc = denom > 0 ? Math.round((correctCount / denom) * 100) : 100;
 
   resultWpm.textContent = net;
   resultAccuracy.textContent = acc + '%';
   resultRaw.textContent = raw;
-  resultChars.textContent = `${correctCount}/${chars.length}`;
-  resultTime.textContent = elapsed + 'с';
+  resultChars.textContent = currentIndex + '/' + chars.length;
+  resultTime.textContent = Math.round(elapsed) + 'с';
   resultErrors.textContent = errors;
+
+  lastResult = { wpm: net, accuracy: acc };
+  shareBtn.disabled = false;
+  nicknameInput.disabled = false;
+  nicknameInput.value = '';
+  shareMsg.textContent = '';
+  shareMsg.className = 'share-msg';
+  shareSection.style.display = firebaseReady ? 'block' : 'none';
 
   resultsOverlay.classList.add('active');
 }
@@ -173,15 +250,8 @@ function handleChar(char) {
   if (!isRunning || isFinished) return;
   if (currentIndex >= chars.length) return;
 
-  if (!timerInterval && timeLeft === timerDuration) {
-    timerInterval = setInterval(() => {
-      timeLeft--;
-      timerEl.textContent = timeLeft;
-      if (timeLeft <= 0) {
-        timeLeft = 0;
-        endGame();
-      }
-    }, 1000);
+  if (!timerStart && !isUnlimited) {
+    startTimer();
   }
 
   const expected = chars[currentIndex].char;
@@ -190,15 +260,11 @@ function handleChar(char) {
   totalTyped++;
 
   if (isCorrect) {
-    if (chars[currentIndex].status !== 'correct') {
-      correctCount++;
-    }
+    if (chars[currentIndex].status !== 'correct') correctCount++;
     chars[currentIndex].status = 'correct';
     currentIndex++;
   } else {
-    if (chars[currentIndex].status !== 'incorrect') {
-      errors++;
-    }
+    if (chars[currentIndex].status !== 'incorrect') errors++;
     chars[currentIndex].status = 'incorrect';
   }
 
@@ -210,52 +276,28 @@ function handleChar(char) {
   }
 }
 
+// ====== INPUT ======
 input.addEventListener('keydown', (e) => {
   if (isFinished) return;
-
-  if (e.key === 'Backspace') {
+  if (e.key === 'Backspace' || e.ctrlKey || e.metaKey || e.altKey) {
     e.preventDefault();
-    return;
-  }
-
-  if (e.ctrlKey || e.metaKey || e.altKey) {
-    e.preventDefault();
-    return;
   }
 });
 
-input.addEventListener('input', (e) => {
-  if (isFinished) {
-    input.value = '';
-    return;
-  }
-
+input.addEventListener('input', () => {
+  if (isFinished) { input.value = ''; return; }
   const val = input.value;
   if (val.length > 0) {
     const char = val[val.length - 1];
-    if (char.length === 1) {
-      handleChar(char);
-    }
+    if (char.length === 1) handleChar(char);
   }
   input.value = '';
 });
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    if (!isRunning || isFinished) {
-      startGame();
-    }
-    input.focus();
-  }
-  if (e.key === 'Escape') {
-    resultsOverlay.classList.remove('active');
-  }
-  if (e.key === 'Enter' && resultsOverlay.classList.contains('active')) {
-    resultRestart.click();
-  }
-});
+textContainer.addEventListener('click', () => { if (!isFinished) input.focus(); });
 
+// ====== NAVIGATION ======
+startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 resultRestart.addEventListener('click', () => {
   resultsOverlay.classList.remove('active');
@@ -263,18 +305,28 @@ resultRestart.addEventListener('click', () => {
 });
 resultNewText.addEventListener('click', () => {
   resultsOverlay.classList.remove('active');
-  startGame();
+  showScreen(menuScreen);
+});
+backToMenu.addEventListener('click', () => {
+  stopTimer();
+  isRunning = false;
+  isFinished = true;
+  showScreen(menuScreen);
 });
 
-difficultySelect.addEventListener('change', startGame);
-categorySelect.addEventListener('change', startGame);
-timeSelect.addEventListener('change', startGame);
+leaderboardBtn.addEventListener('click', () => {
+  loadLeaderboard();
+  showScreen(lbScreen);
+});
+lbBack.addEventListener('click', () => showScreen(menuScreen));
 
-document.getElementById('textContainer').addEventListener('click', () => {
-  if (!isFinished) input.focus();
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') { e.preventDefault(); if (isFinished || !isRunning) startGame(); input.focus(); }
+  if (e.key === 'Escape') { resultsOverlay.classList.remove('active'); showScreen(menuScreen); }
+  if (e.key === 'Enter' && resultsOverlay.classList.contains('active')) { resultRestart.click(); }
 });
 
-// ====== Firebase ======
+// ====== FIREBASE ======
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBVVo_3CoMGJrMYAmCexOFeZS3AIAzO-ck",
   authDomain: "ilyatype-5e336.firebaseapp.com",
@@ -289,58 +341,13 @@ let firebaseReady = false;
 try {
   firebase.initializeApp(FIREBASE_CONFIG);
   firebaseReady = true;
-} catch (e) {
-  console.warn('Firebase not configured');
-}
-
-const shareSection = document.getElementById('shareSection');
-const nicknameInput = document.getElementById('nicknameInput');
-const shareBtn = document.getElementById('shareBtn');
-const shareMsg = document.getElementById('shareMsg');
-const lbEntries = document.getElementById('lbEntries');
-const lbToggle = document.getElementById('lbToggle');
-const lbBody = document.getElementById('lbBody');
-shareSection.style.display = 'none';
+} catch (e) { console.warn('Firebase not configured'); }
 
 let lastResult = null;
 
 function saveResult(nickname, wpm, accuracy) {
   if (!firebaseReady) return Promise.reject('Firebase not ready');
-  const ref = firebase.database().ref('leaderboard');
-  return ref.push({
-    nickname,
-    wpm,
-    accuracy,
-    timestamp: Date.now()
-  });
-}
-
-function loadLeaderboard() {
-  if (!firebaseReady) {
-    lbEntries.innerHTML = '<tr><td colspan="4" class="leaderboard-empty">Firebase не настроен. Впиши свои ключи в script.js</td></tr>';
-    return;
-  }
-  const ref = firebase.database().ref('leaderboard');
-  ref.orderByChild('wpm').limitToLast(50).on('value', (snap) => {
-    const data = snap.val();
-    lbEntries.innerHTML = '';
-    if (!data) {
-      lbEntries.innerHTML = '<tr><td colspan="4" class="leaderboard-empty">Пока никого нет. Будь первым!</td></tr>';
-      return;
-    }
-    const entries = Object.entries(data).map(([id, v]) => v).sort((a, b) => b.wpm - a.wpm);
-    entries.slice(0, 20).forEach((entry, i) => {
-      const tr = document.createElement('tr');
-      const rank = i + 1;
-      tr.innerHTML = `
-        <td class="rank rank-${rank <= 3 ? rank : ''}">${rank}</td>
-        <td class="nickname">${escapeHtml(entry.nickname || 'Анонимус')}</td>
-        <td class="lb-wpm">${entry.wpm}</td>
-        <td class="lb-acc">${entry.accuracy}%</td>
-      `;
-      lbEntries.appendChild(tr);
-    });
-  });
+  return firebase.database().ref('leaderboard').push({ nickname, wpm, accuracy, timestamp: Date.now() });
 }
 
 function escapeHtml(str) {
@@ -349,13 +356,37 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
-shareBtn.addEventListener('click', () => {
-  const nick = nicknameInput.value.trim();
-  if (!nick) {
-    shareMsg.textContent = 'Введи никнейм, енот';
-    shareMsg.className = 'share-msg error';
+function loadLeaderboard() {
+  if (!firebaseReady) {
+    lbEntries.innerHTML = '<tr><td colspan="4" class="lb-empty">Firebase не настроен</td></tr>';
     return;
   }
+  const ref = firebase.database().ref('leaderboard');
+  ref.orderByChild('wpm').limitToLast(50).on('value', (snap) => {
+    const data = snap.val();
+    lbEntries.innerHTML = '';
+    if (!data) {
+      lbEntries.innerHTML = '<tr><td colspan="4" class="lb-empty">Пока никого нет. Будь первым!</td></tr>';
+      return;
+    }
+    const entries = Object.values(data).sort((a, b) => b.wpm - a.wpm);
+    entries.slice(0, 20).forEach((entry, i) => {
+      const tr = document.createElement('tr');
+      const r = i + 1;
+      tr.innerHTML = `
+        <td class="lb-rank ${r <= 3 ? 'r' + r : ''}">${r}</td>
+        <td class="lb-nick">${escapeHtml(entry.nickname || 'Анонимус')}</td>
+        <td class="lb-wpm">${entry.wpm}</td>
+        <td class="lb-acc">${entry.accuracy}%</td>
+      `;
+      lbEntries.appendChild(tr);
+    });
+  });
+}
+
+shareBtn.addEventListener('click', () => {
+  const nick = nicknameInput.value.trim();
+  if (!nick) { shareMsg.textContent = 'Введи никнейм, енот'; shareMsg.className = 'share-msg error'; return; }
   if (!lastResult) return;
   shareBtn.disabled = true;
   shareMsg.textContent = 'Отправляем...';
@@ -366,40 +397,14 @@ shareBtn.addEventListener('click', () => {
       shareMsg.className = 'share-msg success';
       nicknameInput.disabled = true;
     })
-    .catch((err) => {
+    .catch(() => {
       shareMsg.textContent = '❌ Не вышло. Попробуй ещё';
       shareMsg.className = 'share-msg error';
       shareBtn.disabled = false;
     });
 });
+nicknameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') shareBtn.click(); });
 
-nicknameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') shareBtn.click();
-});
-
-lbToggle.addEventListener('click', () => {
-  lbBody.classList.toggle('collapsed');
-  lbToggle.textContent = lbBody.classList.contains('collapsed') ? '▼ развернуть' : '▲ свернуть';
-});
-
+// ====== INIT ======
+shareSection.style.display = 'none';
 loadLeaderboard();
-
-// Patch endGame to save last result and reset share UI
-const origEndGame = endGame;
-endGame = function() {
-  origEndGame.call(this);
-  const elapsed = timerDuration - timeLeft;
-  const minutes = elapsed / 60;
-  const net = minutes > 0 ? Math.round((correctCount / Math.max(minutes, 0.01))) : 0;
-  const denom = correctCount + errors;
-  const acc = denom > 0 ? Math.round((correctCount / denom) * 100) : 100;
-  lastResult = { wpm: net, accuracy: acc };
-  shareBtn.disabled = false;
-  nicknameInput.disabled = false;
-  nicknameInput.value = '';
-  shareMsg.textContent = '';
-  shareMsg.className = 'share-msg';
-  shareSection.style.display = firebaseReady ? 'block' : 'none';
-};
-
-startGame();
