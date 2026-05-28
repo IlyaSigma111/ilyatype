@@ -480,8 +480,9 @@ battleCreateBtn.addEventListener('click', () => {
     battleWaitMsg.textContent = 'Ожидание противника...';
     showBattleScreen(battleWaitScreen);
     listenBattle(code, true);
-  }).catch(() => {
+  }).catch((err) => {
     battleError.textContent = 'Не удалось создать комнату';
+    console.error('Battle create error:', err);
   });
 });
 
@@ -513,9 +514,13 @@ battleJoinBtn.addEventListener('click', () => {
       battleWaitMsg.textContent = 'Противник найден!';
       showBattleScreen(battleWaitScreen);
       startBattleCountdown(code);
-    }).catch(() => {
+    }).catch((err) => {
       battleError.textContent = 'Не удалось присоединиться';
+      console.error('Battle join error:', err);
     });
+  }, (err) => {
+    battleError.textContent = 'Не удалось найти комнату';
+    console.error('Battle read error:', err);
   });
 });
 
