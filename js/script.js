@@ -456,6 +456,7 @@ function cleanupBattle() {
   battleRoom = null;
   battleStartBtn.disabled = false;
   battleStartBtn.textContent = '🚀 Начать игру';
+  document.getElementById('opponentBar').style.display = 'none';
   if (battleTimerInterval) { clearInterval(battleTimerInterval); battleTimerInterval = null; }
   battleResultsOverlay.classList.remove('active');
 }
@@ -525,6 +526,7 @@ battleJoinBtn.addEventListener('click', () => {
       battleWaitMsg.textContent = 'Противник найден! Нажми Начать игру';
       battleRoomCode.textContent = code;
       showBattleScreen(battleWaitScreen);
+      listenBattle(code, false);
     }).catch((err) => {
       battleError.textContent = 'Не удалось присоединиться';
       console.error('Battle join error:', err);
@@ -622,6 +624,7 @@ battleStartBtn.addEventListener('click', () => {
 
 function startBattleGame(text, textObj, code) {
   battleRoom = code;
+  document.getElementById('opponentBar').style.display = '';
   const bChars = [...text].map(ch => ({ char: ch, status: 'pending' }));
   let bCurrentIndex = 0;
   let bCorrect = 0;
