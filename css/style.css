@@ -286,6 +286,25 @@ body {
   height: 56px;
 }
 
+.mode-label {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 11px;
+  z-index: 2;
+}
+
+.timer-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
 .timer-ring-wrap svg {
   transform: rotate(-90deg);
 }
@@ -492,7 +511,27 @@ body {
 
 .results-overlay.active { display: flex; }
 
+.results-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  line-height: 1;
+}
+.results-close:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
 .results-card {
+  position: relative;
   background: var(--surface);
   border-radius: 24px;
   padding: 40px;
@@ -500,6 +539,8 @@ body {
   width: 90%;
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
   animation: slideUp 0.3s ease;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 @keyframes slideUp {

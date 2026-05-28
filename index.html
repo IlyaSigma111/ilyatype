@@ -38,13 +38,11 @@
           <option value="tech">Техно-дичь</option>
           <option value="prose">Жиза</option>
         </select>
-        <select id="timeSelect">
-          <option value="30">30 сек</option>
-          <option value="60" selected>60 сек</option>
-          <option value="120">120 сек</option>
-          <option value="0">♾ Без лимита</option>
+        <select id="modeSelect">
+          <option value="text">📝 На текст</option>
+          <option value="timed">⏱ 1 минута</option>
         </select>
-        <button class="theme-toggle" id="themeToggle">🌙 Тёмная</button>
+        <button class="theme-toggle" id="themeToggle">🌙</button>
       </div>
     </div>
   </div>
@@ -56,12 +54,13 @@
       <div class="game-stats">
         <div class="stat-item">
           <div class="timer-ring-wrap">
+            <span class="mode-label" id="modeLabel">⏱</span>
             <svg viewBox="0 0 36 36" width="56" height="56">
               <circle class="timer-ring-bg" cx="18" cy="18" r="15.5"/>
               <circle class="timer-ring-fill" id="timerRing" cx="18" cy="18" r="15.5"
                 stroke-dasharray="97.4" stroke-dashoffset="0"/>
             </svg>
-            <span class="timer-ring-text" id="timerDisplay">60</span>
+            <span class="timer-ring-text" id="timerDisplay">0:00</span>
           </div>
         </div>
         <div class="stat-item">
@@ -113,8 +112,9 @@
 
   <!-- ====== RESULTS OVERLAY ====== -->
   <div class="results-overlay" id="resultsOverlay">
-    <div class="results-card">
-      <h2>🏆 Итоги позорища</h2>
+      <div class="results-card">
+        <button id="closeResults" class="results-close">✕</button>
+        <h2>🏆 Итоги позорища</h2>
       <div class="results-grid">
         <div class="result-item highlight">
           <div class="rvalue" id="resultWpm">0</div>
