@@ -103,6 +103,14 @@ function getTextPool() {
 let currentTextObj = null;
 
 function pickText() {
+  if (selectedTextObj) {
+    currentTextObj = selectedTextObj;
+    selectedTextObj = null;
+    textSource.textContent = '📖 ' + currentTextObj.source;
+    const labels = {classic:'Классика',modern:'Современное',science:'Наука',tech:'Технологии',prose:'Проза'};
+    textCategory.textContent = labels[currentTextObj.category] || currentTextObj.category;
+    return currentTextObj.text;
+  }
   let pool = getTextPool();
   if (!pool.length) pool = textType === 'normal' ? NORMAL_TEXTS : textType === 'alabuga' ? TEXTS_ALABUGA : TEXTS;
   currentTextObj = pool[Math.floor(Math.random() * pool.length)];
@@ -379,6 +387,46 @@ document.querySelectorAll('[name="theme"]').forEach(r => r.addEventListener('cha
   if (r.checked) setTheme(r.value);
 }));
 
+// ====== TEXT PICKER ======
+const textPickerOverlay = document.getElementById('textPickerOverlay');
+const textPickerList = document.getElementById('textPickerList');
+const closeTextPicker = document.getElementById('closeTextPicker');
+const pickTextBtn = document.getElementById('pickTextBtn');
+
+let selectedTextObj = null;
+
+function openTextPicker() {
+  const pool = getTextPool();
+  textPickerList.innerHTML = '';
+  if (!pool.length) {
+    textPickerList.innerHTML = '<div class="text-picker-empty">Нет текстов под эти фильтры</div>';
+  } else {
+    pool.forEach((t, i) => {
+      const item = document.createElement('div');
+      item.className = 'text-picker-item' + (selectedTextObj === t ? ' selected' : '');
+      const preview = t.text.length > 80 ? t.text.slice(0, 80) + '…' : t.text;
+      const diffLabels = {easy:'Лёгкая',medium:'Средняя',hard:'АДСКАЯ'};
+      const catLabels = {classic:'Классика',modern:'Современное',science:'Наука',tech:'Технологии',prose:'Проза'};
+      item.innerHTML = `
+        <div class="text-picker-item-source">${escHtml(t.source)}</div>
+        <div class="text-picker-item-meta">${catLabels[t.category]||t.category} · ${diffLabels[t.difficulty]||t.difficulty}</div>
+        <div class="text-picker-item-preview">${escHtml(preview)}</div>
+      `;
+      item.addEventListener('click', () => {
+        selectedTextObj = t;
+        textSource.innerHTML = '📖 ' + escHtml(t.source) + ' <span class="text-picker-selected-badge">📚 Выбран</span>';
+        textPickerOverlay.classList.remove('active');
+      });
+      textPickerList.appendChild(item);
+    });
+  }
+  textPickerOverlay.classList.add('active');
+}
+
+pickTextBtn.addEventListener('click', openTextPicker);
+closeTextPicker.addEventListener('click', () => textPickerOverlay.classList.remove('active'));
+textPickerOverlay.addEventListener('click', e => { if (e.target === textPickerOverlay) textPickerOverlay.classList.remove('active'); });
+
 // ====== INIT ======
 shareSection.style.display = 'none';
 loadLeaderboard();
@@ -491,7 +539,7 @@ battleCreateBtn.addEventListener('click', () => {
     showBattleScreen(battleWaitScreen);
     listenBattle(code, true);
   }).catch((err) => {
-    battleError.textContent = 'Не удалось создать комнату';
+    battleError.textContent = err.code === 'PERMISSION_DENIED' ? '❌ Ошибка: открой доступ к battles/ в Firebase консоли!' : 'Не удалось создать комнату';
     console.error('Battle create error:', err);
   });
 });
@@ -528,7 +576,7 @@ battleJoinBtn.addEventListener('click', () => {
       showBattleScreen(battleWaitScreen);
       listenBattle(code, false);
     }).catch((err) => {
-      battleError.textContent = 'Не удалось присоединиться';
+      battleError.textContent = err.code === 'PERMISSION_DENIED' ? '❌ Ошибка: открой доступ к battles/ в Firebase консоли!' : 'Не удалось присоединиться';
       console.error('Battle join error:', err);
     });
   }, (err) => {
@@ -551,7 +599,8 @@ function listenBattle(code, isCreator) {
         battleSpinner.style.display = 'none';
         battleStartBtn.style.display = '';
         battleWaitMsg.textContent = 'Противник найден! Нажми Начать игру';
-        if (data.players.player1 && data.players.player1.ready) {
+        const me = 'player' + battlePlayerNum;
+        if (data.players[me] && data.players[me].ready) {
           battleStartBtn.disabled = true;
           battleStartBtn.textContent = '⏳ Ожидание соперника...';
         } else {
@@ -736,8 +785,6 @@ function startBattleGame(text, textObj, code) {
   bInput.focus();
 
   showBattleScreen(battleGameScreen);
-
-  listenBattle(battleRoom, false);
 }
 
 function showBattleResults(data) {
