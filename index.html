@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ильтест — тест скорости печати от Ильябуги Полимуся</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦝</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>🦝 Ильтест</h1>
+    <div class="settings-bar">
+      <select id="difficulty">
+        <option value="all">Любая боль</option>
+        <option value="easy">Лёгкая боль</option>
+        <option value="medium">Средняя боль</option>
+        <option value="hard">АДСКАЯ БОЛЬ</option>
+      </select>
+      <select id="category">
+        <option value="all">Всё подряд</option>
+        <option value="classic">Дедовские мудрости</option>
+        <option value="modern">Кринж века</option>
+        <option value="science">Научные бредни</option>
+        <option value="tech">Техно-дичь</option>
+        <option value="prose">Жиза</option>
+      </select>
+      <select id="timeSelect">
+        <option value="15">15 сек</option>
+        <option value="30">30 сек</option>
+        <option value="60" selected>60 сек</option>
+        <option value="120">120 сек</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="value" id="timer">60</div>
+        <div class="label">Время</div>
+      </div>
+      <div class="stat">
+        <div class="value" id="wpm">0</div>
+        <div class="label">Буковки/мин</div>
+      </div>
+      <div class="stat">
+        <div class="value" id="accuracy">100%</div>
+        <div class="label">Точность</div>
+      </div>
+      <div class="stat">
+        <div class="value" id="progress">0/0</div>
+        <div class="label">Прогресс</div>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="fill" id="progressFill"></div>
+    </div>
+
+    <div class="text-info">
+      <span id="textSource"></span>
+      <span class="category-badge" id="textCategory"></span>
+    </div>
+
+    <div class="text-container" id="textContainer">
+      <div class="text-display" id="textDisplay"></div>
+      <textarea class="hidden-input" id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    </div>
+
+    <button class="restart-btn" id="restartBtn">Новый текст</button>
+  </main>
+
+  <div class="results-overlay" id="resultsOverlay">
+    <div class="results-card">
+      <h2>🏆 Итоги позорища</h2>
+      <div class="results-grid">
+        <div class="result-item highlight">
+          <div class="rvalue" id="resultWpm">0</div>
+          <div class="rlabel">Буковок в минуту</div>
+        </div>
+        <div class="result-item">
+          <div class="rvalue" id="resultAccuracy">0%</div>
+          <div class="rlabel">Точность</div>
+        </div>
+        <div class="result-item">
+          <div class="rvalue" id="resultRaw">0</div>
+          <div class="rlabel">Сырые буковки</div>
+        </div>
+        <div class="result-item">
+          <div class="rvalue" id="resultChars">0/0</div>
+          <div class="rlabel">Верно / Всего</div>
+        </div>
+        <div class="result-item">
+          <div class="rvalue" id="resultTime">0с</div>
+          <div class="rlabel">Время</div>
+        </div>
+        <div class="result-item">
+          <div class="rvalue" id="resultErrors">0</div>
+          <div class="rlabel">Корявостей</div>
+        </div>
+      </div>
+      <div class="results-actions">
+        <button class="primary" id="resultRestart">Ещё раз</button>
+        <button id="resultNewText">Новый текст</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Ильябуга Полимусь Inc. — Все права унижены
+  </footer>
+
+  <script src="js/texts.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
