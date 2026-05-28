@@ -414,6 +414,8 @@ const battleResultTitle = document.getElementById('battleResultTitle');
 const battleResultPlayers = document.getElementById('battleResultPlayers');
 const battleResultMenu = document.getElementById('battleResultMenu');
 const battleResultsOverlay = document.getElementById('battleResultsOverlay');
+const battleStartBtn = document.getElementById('battleStartBtn');
+const battleSpinner = document.getElementById('battleSpinner');
 
 let battleRoom = null;
 let battlePlayerNum = 0;
@@ -477,6 +479,8 @@ battleCreateBtn.addEventListener('click', () => {
     bpStatus1.textContent = '👤 Вы';
     bpName2.textContent = '—';
     bpStatus2.textContent = '⏳ Ожидание';
+    battleSpinner.style.display = '';
+    battleStartBtn.style.display = 'none';
     battleWaitMsg.textContent = 'Ожидание противника...';
     showBattleScreen(battleWaitScreen);
     listenBattle(code, true);
@@ -504,16 +508,18 @@ battleJoinBtn.addEventListener('click', () => {
     if (data.players.player2) { battleError.textContent = 'Комната уже заполнена'; return; }
 
     ref.child('players/player2').set({
-      nickname: nick, progress: 0, wpm: 0, accuracy: 100, finished: false, joinedAt: Date.now()
+      nickname: nick, progress: 0, wpm: 0, accuracy: 100, finished: false, ready: false, joinedAt: Date.now()
     }).then(() => {
       bpName1.textContent = data.players.player1.nickname;
       battleOpponentNick = data.players.player1.nickname;
       bpStatus1.textContent = '👤 Противник';
       bpName2.textContent = nick;
       bpStatus2.textContent = '👤 Вы';
-      battleWaitMsg.textContent = 'Противник найден!';
+      battleSpinner.style.display = 'none';
+      battleStartBtn.style.display = '';
+      battleWaitMsg.textContent = 'Противник найден! Нажми Начать игру';
+      battleRoomCode.textContent = code;
       showBattleScreen(battleWaitScreen);
-      startBattleCountdown(code);
     }).catch((err) => {
       battleError.textContent = 'Не удалось присоединиться';
       console.error('Battle join error:', err);
@@ -530,13 +536,34 @@ function listenBattle(code, isCreator) {
     const data = snap.val();
     if (!data) return;
 
-    if (data.status === 'waiting' && isCreator) {
+    if (data.status === 'waiting') {
       if (data.players.player2) {
         battleOpponentNick = data.players.player2.nickname;
         bpName2.textContent = data.players.player2.nickname;
         bpStatus2.textContent = '👤 Противник';
-        battleWaitMsg.textContent = 'Противник найден!';
-        startBattleCountdown(code);
+        battleSpinner.style.display = 'none';
+        battleStartBtn.style.display = '';
+        battleWaitMsg.textContent = 'Противник найден! Нажми Начать игру';
+        if (data.players.player1 && data.players.player1.ready) {
+          battleStartBtn.disabled = true;
+          battleStartBtn.textContent = '⏳ Ожидание соперника...';
+        } else {
+          battleStartBtn.disabled = false;
+          battleStartBtn.textContent = '🚀 Начать игру';
+        }
+      }
+      const p1r = data.players.player1 && data.players.player1.ready;
+      const p2r = data.players.player2 && data.players.player2.ready;
+      if (p1r && p2r && isCreator) {
+        startBattleCountdown(battleRoom);
+      }
+    }
+
+    if (data.status === 'playing') {
+      if (!battleGameScreen.classList.contains('active')) {
+        const text = data.text;
+        const textObj = data.textObj || { category: 'prose', difficulty: 'medium', source: 'Текст' };
+        startBattleGame(text, textObj, code);
       }
     }
 
@@ -560,7 +587,6 @@ function listenBattle(code, isCreator) {
 }
 
 function startBattleCountdown(code) {
-  cleanupBattle();
   battleRoom = code;
 
   const ref = firebase.database().ref('battles/' + code);
@@ -578,9 +604,16 @@ function startBattleCountdown(code) {
     textObj: { category: textObj.category, difficulty: textObj.difficulty, source: textObj.source },
     startedAt: Date.now()
   });
-
-  startBattleGame(sharedText, textObj, code);
 }
+
+battleStartBtn.addEventListener('click', () => {
+  const me = 'player' + battlePlayerNum;
+  const ref = firebase.database().ref('battles/' + battleRoom);
+  ref.child('players/' + me + '/ready').set(true).then(() => {
+    battleStartBtn.disabled = true;
+    battleStartBtn.textContent = '⏳ Ожидание соперника...';
+  });
+});
 
 function startBattleGame(text, textObj, code) {
   battleRoom = code;
